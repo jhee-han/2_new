@@ -116,10 +116,12 @@ skip connection parameter : 0 = no skip connection
                             2 = skip connection where skip input size === 2 * input size
 '''
 class gated_resnet(nn.Module):
-    def __init__(self, num_filters, conv_op, nonlinearity=concat_elu, skip_connection=0):
+    def __init__(self, num_filters, conv_op, nonlinearity=concat_elu, skip_connection=0, film=False):
         super(gated_resnet, self).__init__()
         self.skip_connection = skip_connection
         self.nonlinearity = nonlinearity
+        self.film = film
+        
         self.conv_input = conv_op(2 * num_filters, num_filters) # cuz of concat elu
 
         if skip_connection != 0 :
@@ -128,11 +130,27 @@ class gated_resnet(nn.Module):
         self.dropout = nn.Dropout2d(0.5)
         self.conv_out = conv_op(2 * num_filters, 2 * num_filters)
 
+        if self.film:
+            self.film_gamma = nn.Linear(num_filters,num_filters)
+            self.film_beta = nn.Linear(num_filters,num_filters)
 
-    def forward(self, og_x, a=None):
+            nn.init.xavier_uniform_(self.film_gamma.weight)
+            nn.init.zeros_(self.film_gamma.bias)
+            nn.init.xavier_uniform_(self.film_beta.weight)
+            nn.init.zeros_(self.film_beta.bias)
+
+
+    def forward(self, og_x, a=None, class_embedding=None):
         x = self.conv_input(self.nonlinearity(og_x))
         if a is not None :
             x += self.nin_skip(self.nonlinearity(a))
+
+        if self.film and class_embedding is not None:
+            k = class_embedding.squeeze(-1).squeeze(-1)
+            gamma = self.film_gamma(k).unsqueeze(-1).unsqueeze(-1)
+            beta = self.film_beta(k).unsqueeze(-1).unsqueeze(-1)
+            x = gamma * x + beta
+
         x = self.nonlinearity(x)
         x = self.dropout(x)
         x = self.conv_out(x)

@@ -96,12 +96,8 @@ if __name__ == '__main__':
         model.load_state_dict(torch.load(model_path))
         print('✅ model parameters loaded')
     else:
-        raise FileNotFoundError(f"❌ Model file not found at {model_path}")
-    if os.path.exists(model_path):
-        model.load_state_dict(torch.load(model_path))
-        print('model parameters loaded')
-    else:
-        raise FileNotFoundError(f"Model file not found at {model_path}")
+        raise FileNotFoundError(f" Model file not found at {model_path}")
+
 
     model.eval()
     

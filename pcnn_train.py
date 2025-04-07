@@ -92,6 +92,10 @@ if __name__ == '__main__':
                         default=5000, help='How many epochs to run in total?')
     parser.add_argument('-s', '--seed', type=int, default=1,
                         help='Random seed to use')
+
+    parser.add_argument('--film', dest='film', action='store_true', help="Enable FiLM (default)")
+    parser.add_argument('--no_film', dest='film', action='store_false', help="Disable FiLM")
+    parser.set_defaults(film=True)
     
     args = parser.parse_args()
     pprint(args.__dict__)
@@ -202,7 +206,7 @@ if __name__ == '__main__':
     sample_op = lambda x : sample_from_discretized_mix_logistic(x, args.nr_logistic_mix)
 
     model = PixelCNN(nr_resnet=args.nr_resnet, nr_filters=args.nr_filters, 
-                input_channels=input_channels, nr_logistic_mix=args.nr_logistic_mix)
+                input_channels=input_channels, nr_logistic_mix=args.nr_logistic_mix, film=args.film)
     model = model.to(device)
 
     if args.load_params:
@@ -291,7 +295,7 @@ if __name__ == '__main__':
                 'model': model.state_dict(),
                 'optim': optimizer.state_dict()},
                f'{CKPT_DIR}/pcnn_e{epoch+1}.pth')
-               
+
             ema.restore(model)
 
     save_name = f'models/conditional_pixelcnn_{args.tag}.pth'
